@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>   
+ <selector xmlns:android="http://schemas.android.com/apk/res/android" >  
+    <!-- <item android:state_focused="true"
+          android:color="#ff0000ff"/> focused -->
+   
+<item android:state_selected="true" 
+    android:drawable="@drawable/stop"> <!-- pressed -->   
+</item>
+<item android:state_selected="false" 
+    android:drawable="@drawable/start"> <!-- pressed -->   
+</item>
+<item android:state_enabled="false" 
+    android:drawable="@drawable/start_disable"> <!-- pressed -->   
+</item>
+
+</selector>
