@@ -1,5 +1,6 @@
-package in.manish.boundedservice;
+package in.manish.boundedservice.calllog;
 
+import in.manish.boundedservice.R;
 import in.manish.boundedservice.util.AppLog;
 
 import java.text.DecimalFormat;
@@ -15,7 +16,6 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,9 +27,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 	private TextView textStatus, textIntValue, textStrValue;
 	private Messenger mServiceMessenger = null;
 	boolean mIsBound;
-	private DecimalFormat df3 = new DecimalFormat("#0.0000");
-	private DecimalFormat df6 = new DecimalFormat("#0.000000");
-	private DecimalFormat df0 = new DecimalFormat("#0");
 
 	private static final String LOGTAG = "MainActivity";
 	public static final int EXPLICTLY_STOP = 1000;
@@ -88,6 +85,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 				}
 			}
 		});
+		if(! CallLogService.isRunning()) {
+			doBindService();
+		}
 		automaticBind();
 	}
 
@@ -96,7 +96,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 	 * when the activity starts, we want to automatically bind to it.
 	 */
 	private void automaticBind() {
-		if (MyService.isRunning()) {
+		if (CallLogService.isRunning()) {
 			doBindService();
 			btnBind.performClick();
 		}
@@ -129,7 +129,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 		if (mIsBound) {
 			if (mServiceMessenger != null) {
 				try {
-					Message msg = Message.obtain(null, MyService.MSG_SET_INT_VALUE, intvaluetosend, 0);
+//					Message msg = Message.obtain(null, MyService.MSG_SET_INT_VALUE, intvaluetosend, 0);
+					Message msg = Message.obtain(null, intvaluetosend);
 					msg.replyTo = mMessenger;
 					mServiceMessenger.send(msg);
 				} catch (RemoteException e) {
@@ -143,8 +144,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 	 */
 	private void doBindService() {
 		// if we will not call below line, service destroyed on click back button because of BIND_AUTO_CREATE
-		startService(new Intent(MainActivity.this, MyService.class));
-		bindService(new Intent(this, MyService.class), mConnection, Context.BIND_AUTO_CREATE);
+		startService(new Intent(MainActivity.this, CallLogService.class));
+		bindService(new Intent(this, CallLogService.class), mConnection, Context.BIND_AUTO_CREATE);
 		mIsBound = true;
 		textStatus.setText("Binding.");
 	}
@@ -159,9 +160,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 				try {
 					Message msg;
 					if(shouldRunInBackground)
-						msg = Message.obtain(null, MyService.MSG_UNREGISTER_CLIENT);
+						msg = Message.obtain(null, CallLogService.MSG_UNREGISTER_CLIENT);
 					else
-						msg = Message.obtain(null, MyService.MSG_STOP_RECORDING);
+						msg = Message.obtain(null, CallLogService.MSG_STOP_RECORDING);
 					msg.replyTo = mMessenger;
 					mServiceMessenger.send(msg);
 				} catch (RemoteException e) {
@@ -201,13 +202,17 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 //				stopService(new Intent(MainActivity.this, MyService.class));
 			} else{
 				//whichButtonSelected = PERFORM_CLICK_BUTTON_WALKING;
+				if(! CallLogService.isRunning()) {
+					doBindService();
+					return;
+				}
 				AppLog.e("buttonWalking buton is selected");
 				btnBind.setEnabled(false);
 				btnBind.setBackgroundResource(R.drawable.start_disable);
 //				v.setEnabled(true);
 //				v.setSelected(true);
 //				v.setBackgroundResource(R.drawable.stop);
-				doBindService();
+				sendMessageToService(CallLogService.MSG_START_RECORDING);
 			}
 		}
 		else if(v.equals(btnUnbind)) {
@@ -226,7 +231,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 		mServiceMessenger = new Messenger(service);
 		textStatus.setText("Attached.");
 		try {
-			Message msg = Message.obtain(null, MyService.MSG_REGISTER_CLIENT);
+			Message msg = Message.obtain(null, CallLogService.MSG_REGISTER_CLIENT);
 			msg.replyTo = mMessenger;
 			mServiceMessenger.send(msg);
 		} 
@@ -261,16 +266,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Serv
 		public void handleMessage(Message msg) {
 			// Log.d(LOGTAG,"IncomingHandler:handleMessage");
 			switch (msg.what) {
-			case MyService.MSG_SET_INT_VALUE:
+			case CallLogService.MSG_SET_INT_VALUE:
 //				textIntValue.setText("Elapsed duration: " + msg.arg1+ " seconds");
 				break;
-			case MyService.MSG_SET_STRING_VALUE:
+			case CallLogService.MSG_SET_STRING_VALUE:
 				String str1 = msg.getData().getString("str1");
-				Float x = msg.getData().getFloat("x");
-				Float y = msg.getData().getFloat("y");
-				Float z = msg.getData().getFloat("z");
-				Float duration = msg.getData().getFloat("duration");
+//				Float x = msg.getData().getFloat("x");
+//				Float y = msg.getData().getFloat("y");
+//				Float z = msg.getData().getFloat("z");
+//				Float duration = msg.getData().getFloat("duration");
 				boolean enableStartButton = msg.getData().getBoolean("startButtonState");
+				btnBind.setText(str1);
+				
 				if(enableStartButton) {
 //					btnBind.setEnabled(true);
 					btnBind.setSelected(true);
